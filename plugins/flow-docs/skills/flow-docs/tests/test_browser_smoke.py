@@ -40,8 +40,9 @@ def main():
             browser = p.chromium.launch()
             page = browser.new_page()
             page.goto(f"http://127.0.0.1:{PORT}/")
-            # 1) 다이어그램 렌더
+            # 1) 다이어그램 렌더 (sample 엣지 라벨에 괄호가 있어 Mermaid 괄호 처리 회귀도 함께 검증)
             page.wait_for_selector("#diagram svg", timeout=10000)
+            assert page.locator("#diagram .error").count() == 0, "diagram render error (Mermaid label?)"
             assert page.locator("#node-list .node-item").count() == 3, "node list not rendered"
             # 2) 선택(목록) → detail 표시
             page.locator('#node-list .node-item[data-id="n1"]').click()

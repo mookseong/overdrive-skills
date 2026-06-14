@@ -14,7 +14,7 @@ function nodesToMermaid(d) {
   }
   for (const e of d.edges) {
     if (!e.from || !e.to) continue;
-    const lbl = e.label ? `|${String(e.label).replace(/"/g, "'")}|` : "";
+    const lbl = e.label ? `|"${String(e.label).replace(/"/g, "'")}"|` : "";
     lines.push(`  ${e.from} -->${lbl} ${e.to}`);
   }
   for (const n of d.nodes) {
