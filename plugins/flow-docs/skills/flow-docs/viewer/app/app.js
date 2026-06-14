@@ -126,10 +126,11 @@ async function save() {
   const status = document.getElementById("save-status");
   status.textContent = "저장 중...";
   try {
+    const payload = { ...data, edges: data.edges.filter((e) => e.from && e.to) };
     const res = await fetch("/api/data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     const j = await res.json().catch(() => ({}));
     status.textContent = res.ok
