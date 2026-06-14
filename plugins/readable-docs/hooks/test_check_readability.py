@@ -62,6 +62,17 @@ class TestHookProcess(unittest.TestCase):
             self.assertEqual(rc, 2)
             self.assertIn("가독성", err)
 
+    def test_target_good_doc_exits_0(self):
+        with tempfile.TemporaryDirectory() as d:
+            docs = os.path.join(d, "docs")
+            os.makedirs(docs)
+            path = os.path.join(docs, "good.md")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(GOOD_DOC)
+            rc, err = run_hook(path)
+            self.assertEqual(rc, 0)
+            self.assertEqual(err, "")
+
     def test_non_md_passes(self):
         rc, err = run_hook("/tmp/does-not-matter.py")
         self.assertEqual(rc, 0)

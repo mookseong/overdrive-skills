@@ -53,6 +53,8 @@ def check_readability(text):
     failures = []
     lines = text.split("\n")
     fence_count = sum(1 for ln in lines if ln.lstrip().startswith("```"))
+    # 펜스 라인이 2개 이상이면 코드블록 1쌍이 있다고 본다. 닫히지 않은 단일 펜스(잘못된 마크다운)는
+    # 코드블록 누락으로 처리된다 — 안전망의 의도된 한계(품질 판단은 스킬이 담당).
 
     # 1) 상단 요약: 첫 '## ' 이전에 본문 산문이 있는가
     summary = []
