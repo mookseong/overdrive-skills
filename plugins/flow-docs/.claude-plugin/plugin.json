@@ -1,0 +1,8 @@
+{
+  "name": "flow-docs",
+  "version": "0.1.0",
+  "description": "PRD를 개발자용 HTML 문서 + 편집 가능한 흐름 다이어그램으로 만들어 로컬 서버로 띄운다. interactive PRD, flow diagram, Mermaid, 요구사항 문서, 시각화.",
+  "author": { "name": "limseongmuk", "email": "kmkook12312@gmail.com" },
+  "license": "MIT",
+  "keywords": ["prd", "flow", "diagram", "mermaid", "visualization", "interactive", "문서화"]
+}

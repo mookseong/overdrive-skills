@@ -11,9 +11,14 @@
       "description": "읽기 좋은 한국어 기술/API 문서 작법을 강제하는 skill + 구조 가독성 게이트 hook",
       "version": "0.1.0",
       "source": "./plugins/readable-docs",
-      "author": {
-        "name": "limseongmuk"
-      }
+      "author": { "name": "limseongmuk" }
+    },
+    {
+      "name": "flow-docs",
+      "description": "PRD를 개발자용 HTML 문서 + 편집 가능한 Mermaid 흐름으로 만들어 로컬 서버로 띄우는 skill",
+      "version": "0.1.0",
+      "source": "./plugins/flow-docs",
+      "author": { "name": "limseongmuk" }
     }
   ]
 }
