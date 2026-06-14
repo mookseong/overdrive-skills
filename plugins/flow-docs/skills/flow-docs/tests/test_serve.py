@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 import tempfile
 import threading
@@ -40,6 +41,13 @@ class TestValidate(unittest.TestCase):
         bad = dict(SAMPLE, edges=[{"from": "n1", "to": "zzz"}])
         self.assertTrue(any("zzz" in e for e in serve.validate_prd(bad)))
 
+    def test_non_dict(self):
+        self.assertTrue(serve.validate_prd([]))  # 비-객체 → 에러
+
+    def test_nodes_not_list(self):
+        bad = {"title": "t", "overview": "o", "nodes": "x", "edges": []}
+        self.assertTrue(any("nodes" in e for e in serve.validate_prd(bad)))
+
 
 class TestServer(unittest.TestCase):
     def setUp(self):
@@ -58,6 +66,7 @@ class TestServer(unittest.TestCase):
     def tearDown(self):
         self.httpd.shutdown()
         os.unlink(self.data)
+        shutil.rmtree(self.appdir, ignore_errors=True)
 
     def url(self, p):
         return f"http://127.0.0.1:{self.port}{p}"

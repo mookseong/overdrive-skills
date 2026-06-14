@@ -94,7 +94,7 @@ def make_handler(data_path, app_dir=APP_DIR):
             if self.path.split("?", 1)[0] != "/api/data":
                 self._send(404, b"not found")
                 return
-            length = int(self.headers.get("Content-Length", 0) or 0)
+            length = max(0, int(self.headers.get("Content-Length", 0) or 0))
             raw = self.rfile.read(length) if length else b""
             try:
                 obj = json.loads(raw)
