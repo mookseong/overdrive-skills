@@ -1,9 +1,12 @@
 {
   "name": "claude-skills",
-  "description": "사내 AI-native 워크플로우 plugin 모음 (개발본부)",
   "owner": {
     "name": "limseongmuk",
     "email": "kmkook12312@gmail.com"
+  },
+  "metadata": {
+    "description": "사내 AI-native 워크플로우 plugin 모음 (개발본부)",
+    "version": "0.1.0"
   },
   "plugins": [
     {
