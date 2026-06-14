@@ -1,0 +1,19 @@
+{
+  "name": "claude-skills",
+  "description": "사내 AI-native 워크플로우 plugin 모음 (개발본부)",
+  "owner": {
+    "name": "limseongmuk",
+    "email": "kmkook12312@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "readable-docs",
+      "description": "읽기 좋은 한국어 기술/API 문서 작법을 강제하는 skill + 구조 가독성 게이트 hook",
+      "version": "0.1.0",
+      "source": "./plugins/readable-docs",
+      "author": {
+        "name": "limseongmuk"
+      }
+    }
+  ]
+}
