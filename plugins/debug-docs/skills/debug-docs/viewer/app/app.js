@@ -65,7 +65,7 @@ function selectNode(id) {
   const n = data.nodes.find((x) => x.id === id);
   const panel = document.getElementById("detail-panel");
   panel.innerHTML = n
-    ? `<h3>${escapeHtml(n.label)} <span class="badge">${escapeHtml(statusOf(n))}</span></h3>` + marked.parse(n.detail || "_증거 없음_")
+    ? `<h3>${escapeHtml(n.label)} <span class="badge ${STATUS_CLASS[statusOf(n)]}">${escapeHtml(statusOf(n))}</span></h3>` + marked.parse(n.detail || "_증거 없음_")
     : '<p class="muted">노드를 선택하세요.</p>';
   renderNodeList();
 }
