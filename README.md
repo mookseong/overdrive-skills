@@ -1,6 +1,6 @@
 # overdrive-skills
 
-사내 AI-native 워크플로우를 Claude Code plugin으로 패키징한 미니 marketplace.
+ 워크플로우를 Claude Code plugin으로 패키징한 미니 marketplace.
 
 ## 수록 plugin
 
