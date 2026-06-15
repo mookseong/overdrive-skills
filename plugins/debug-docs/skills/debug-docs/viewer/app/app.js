@@ -19,28 +19,40 @@ function escapeMermaidLabel(s) {
   return String(s).replace(/[&"#<>]/g, (c) => MERMAID_LABEL_ESC[c]);
 }
 
+// 사용자 노드 id는 공백/메타문자(< " # 등)를 가질 수 있어 Mermaid 식별자로 그대로 쓰면 파싱이 깨진다.
+// 렌더마다 안전한 합성 id(n0, n1...)로 디커플하고, 다이어그램 클릭은 합성 id로 원본 id를 되찾아 selectNode를 부른다.
+// 따라서 Mermaid 정의 어디에도 사용자 제어 문자열이 식별자로 들어가지 않는다(라벨은 escapeMermaidLabel로 별도 처리).
+let midToId = {};
 function nodesToMermaid(d) {
   const lines = ["flowchart TD"];
+  const mid = new Map();
+  midToId = {};
+  d.nodes.forEach((n, i) => { mid.set(n.id, "n" + i); midToId["n" + i] = n.id; });
   for (const n of d.nodes) {
     const label = escapeMermaidLabel(n.label || n.id);
-    lines.push(`  ${n.id}["${label}"]`);
+    lines.push(`  ${mid.get(n.id)}["${label}"]`);
   }
   for (const e of d.edges) {
-    if (!e.from || !e.to) continue;
+    if (!e.from || !e.to || !mid.has(e.from) || !mid.has(e.to)) continue;
     const lbl = e.label ? `|"${escapeMermaidLabel(e.label)}"|` : "";
-    lines.push(`  ${e.from} -->${lbl} ${e.to}`);
+    lines.push(`  ${mid.get(e.from)} -->${lbl} ${mid.get(e.to)}`);
   }
   for (const n of d.nodes) {
-    lines.push(`  click ${n.id} call selectNode("${n.id}")`);
+    lines.push(`  click ${mid.get(n.id)} call selectNodeByMid("${mid.get(n.id)}")`);
   }
   lines.push("  classDef s_hypo fill:#ddf4ff,stroke:#0969da,color:#1f2328;");
   lines.push("  classDef s_invest fill:#fff8c5,stroke:#bf8700,color:#1f2328;");
   lines.push("  classDef s_reject fill:#eaeef2,stroke:#afb8c1,color:#8c959f;");
   lines.push("  classDef s_confirm fill:#ffebe9,stroke:#cf222e,color:#cf222e;");
   for (const n of d.nodes) {
-    lines.push(`  class ${n.id} ${STATUS_CLASS[statusOf(n)]};`);
+    lines.push(`  class ${mid.get(n.id)} ${STATUS_CLASS[statusOf(n)]};`);
   }
   return lines.join("\n");
+}
+
+function selectNodeByMid(m) {
+  const id = midToId[m];
+  if (id != null) selectNode(id);
 }
 
 let renderSeq = 0;
@@ -168,6 +180,7 @@ async function load() {
 }
 
 window.selectNode = selectNode;
+window.selectNodeByMid = selectNodeByMid;
 mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
 document.getElementById("save-btn").onclick = save;
 load();

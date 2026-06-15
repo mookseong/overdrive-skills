@@ -31,7 +31,12 @@ def main():
 
     work = Path(tempfile.mkdtemp())
     data = work / "debug.json"
-    shutil.copy(SAMPLE, data)
+    # 노드 id 이스케이프 회귀 가드: 정식 샘플(깨끗한 id)은 그대로 두고, id에 공백/메타문자가 든
+    # 적대적 노드 1개를 주입한다. id가 이스케이프되지 않으면 Mermaid 파싱이 깨져 #diagram이 통째로 실패한다.
+    sample_doc = json.loads(SAMPLE.read_text(encoding="utf-8"))
+    sample_doc["nodes"].append({"id": 'race condition "x" #1', "label": "주입: 경쟁 상태", "status": "조사중", "detail": "ev"})
+    sample_doc["edges"].append({"from": "sym", "to": 'race condition "x" #1', "label": "왜?"})
+    data.write_text(json.dumps(sample_doc, ensure_ascii=False), encoding="utf-8")
     proc = subprocess.Popen([sys.executable, str(VIEWER / "serve.py"), str(data), "--port", str(PORT)])
     try:
         assert wait_up(f"http://127.0.0.1:{PORT}/api/data"), "server did not start"
@@ -42,7 +47,7 @@ def main():
             # 1) 렌더 + 에러 없음
             page.wait_for_selector("#diagram svg", timeout=10000)
             assert page.locator("#diagram .error").count() == 0, "render error"
-            assert page.locator("#node-list .node-item").count() == 5, "node list not rendered"
+            assert page.locator("#node-list .node-item").count() == 6, "node list not rendered"
             # 1b) 상태 색 클래스 적용 확인(확정/기각). vendored Mermaid가 class를 노드 <g>에 안 붙이고
             #     <style>로만 적용하면 이 셀렉터가 0 → 그 경우 노드 fill 계산값으로 검증하도록 교체(아래 Expected NOTE).
             assert page.locator("#diagram svg .s_confirm").count() >= 1, "confirm status color missing"
@@ -55,6 +60,8 @@ def main():
             joined = "".join(node_labels)
             assert '"List<int>"' in joined, "quote/angle-bracket escaping regression (#1 quotes, <tag> strip)"
             assert "#504;" in joined, "hash entity escaping regression (#2)"
+            # 1d) 노드 id 이스케이프 회귀 가드: 공백/메타문자 id를 가진 주입 노드가 깨짐 없이 렌더됐는지.
+            assert "주입: 경쟁 상태" in joined, "adversarial node id broke diagram render (id escaping regression)"
             # 2) 노드 선택 → 증거 + 상태 배지
             page.locator('#node-list .node-item[data-id="h3"]').click()
             page.wait_for_selector("#detail-panel h3")
