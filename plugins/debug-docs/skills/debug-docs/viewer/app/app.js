@@ -13,12 +13,12 @@ function statusOf(n) { return STATUSES.includes(n.status) ? n.status : "가설";
 function nodesToMermaid(d) {
   const lines = ["flowchart TD"];
   for (const n of d.nodes) {
-    const label = String(n.label || n.id).replace(/"/g, "'");
+    const label = String(n.label || n.id).replace(/"/g, "'").replace(/#/g, "#35;");
     lines.push(`  ${n.id}["${label}"]`);
   }
   for (const e of d.edges) {
     if (!e.from || !e.to) continue;
-    const lbl = e.label ? `|"${String(e.label).replace(/"/g, "'")}"|` : "";
+    const lbl = e.label ? `|"${String(e.label).replace(/"/g, "'").replace(/#/g, "#35;")}"|` : "";
     lines.push(`  ${e.from} -->${lbl} ${e.to}`);
   }
   for (const n of d.nodes) {
