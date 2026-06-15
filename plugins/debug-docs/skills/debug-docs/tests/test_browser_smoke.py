@@ -47,8 +47,14 @@ def main():
             #     <style>로만 적용하면 이 셀렉터가 0 → 그 경우 노드 fill 계산값으로 검증하도록 교체(아래 Expected NOTE).
             assert page.locator("#diagram svg .s_confirm").count() >= 1, "confirm status color missing"
             assert page.locator("#diagram svg .s_reject").count() >= 1, "reject status color missing"
-            # 1c) Mermaid # 엔티티 버그 회귀 가드: '#504'가 엔티티로 먹히지 않고 리터럴로 렌더되는지
-            assert "#504" in page.locator("#diagram svg").text_content(), "label '#' eaten by Mermaid entity handling"
+            # 1c) Mermaid 라벨 이스케이프 회귀 가드: 노드 라벨 요소만 읽어(<style> 블록 오탐 방지)
+            #     특수문자(" < > #)가 엔티티로 먹히거나 태그로 스트립되지 않고 리터럴로 살아남는지 검증.
+            node_labels = page.eval_on_selector_all(
+                "#diagram svg .nodeLabel", "els => els.map(e => e.textContent)"
+            )
+            joined = "".join(node_labels)
+            assert '"List<int>"' in joined, "quote/angle-bracket escaping regression (#1 quotes, <tag> strip)"
+            assert "#504;" in joined, "hash entity escaping regression (#2)"
             # 2) 노드 선택 → 증거 + 상태 배지
             page.locator('#node-list .node-item[data-id="h3"]').click()
             page.wait_for_selector("#detail-panel h3")

@@ -10,15 +10,24 @@ function escapeHtml(s) {
 function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
 function statusOf(n) { return STATUSES.includes(n.status) ? n.status : "가설"; }
 
+// Mermaid 라벨에 사용자 텍스트를 안전히 넣는다: 특수문자(" < > & #)를 Mermaid 십진 엔티티 코드(#NN;)로
+// 단일 패스 치환(콜백이라 치환 결과인 #NN;이 다시 매칭되지 않아 이중 이스케이프가 없다).
+// htmlLabels 환경에서 " 따옴표 종료 / <태그> 스트립 / &엔티티; 디코드 / #NN; 엔티티 해석으로
+// 라벨이 깨지거나 글자가 사라지는 것을 막는다.
+const MERMAID_LABEL_ESC = { "&": "#38;", '"': "#34;", "#": "#35;", "<": "#60;", ">": "#62;" };
+function escapeMermaidLabel(s) {
+  return String(s).replace(/[&"#<>]/g, (c) => MERMAID_LABEL_ESC[c]);
+}
+
 function nodesToMermaid(d) {
   const lines = ["flowchart TD"];
   for (const n of d.nodes) {
-    const label = String(n.label || n.id).replace(/"/g, "'").replace(/#/g, "#35;");
+    const label = escapeMermaidLabel(n.label || n.id);
     lines.push(`  ${n.id}["${label}"]`);
   }
   for (const e of d.edges) {
     if (!e.from || !e.to) continue;
-    const lbl = e.label ? `|"${String(e.label).replace(/"/g, "'").replace(/#/g, "#35;")}"|` : "";
+    const lbl = e.label ? `|"${escapeMermaidLabel(e.label)}"|` : "";
     lines.push(`  ${e.from} -->${lbl} ${e.to}`);
   }
   for (const n of d.nodes) {
