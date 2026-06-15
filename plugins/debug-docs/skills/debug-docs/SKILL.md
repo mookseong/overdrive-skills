@@ -1,6 +1,6 @@
 ---
 name: debug-docs
-description: 버그·장애·에러·실패·이상 동작의 원인을 찾거나 디버깅·근본원인 분석(RCA)·사후분석(postmortem)을 할 때 사용. "왜 안 되는지", "원인 분석해줘", "디버깅", "장애/원인을 트리로 시각화해줘", "원인 분석을 HTML로 만들어줘/보여줘" 같은 요청에 발동. 증상→가설→근본원인을 상태색(가설/조사중/기각/확정) 원인-결과 트리로 HTML 시각화하고 로컬 서버로 띄우며, 노드 클릭 시 증거 표시·상태 편집·저장한다. Use when debugging, investigating a failure/incident, or doing root cause analysis (5 whys, fishbone, postmortem), or when asked to visualize the cause of a bug as an HTML diagram.
+description: 버그·장애·에러·실패·이상 동작의 "원인"을 찾고 디버깅·근본원인 분석(RCA)·사후분석(postmortem)할 때 사용. "왜 안 되는지", "원인 분석해줘", "디버깅", "장애/원인을 트리로 시각화해줘", "원인 분석을 HTML로 보여줘", "이 분석 결과를 원인-결과 트리로 정리해줘" 같은 요청에 발동. 증상→가설→근본원인을 상태색(가설/조사중/기각/확정) 원인-결과 트리로 HTML 시각화하고 로컬 서버로 띄우며, 노드 클릭 시 증거 표시·상태 편집·저장한다. 트리(tree) 모양 전용이며 흐름도·프로세스 다이어그램은 flow-docs가 담당한다. 코드를 고치는 핫픽스·버그 패치·테스트 수정이 아니라 원인을 분석·문서화할 때만 쓴다. Use when investigating a bug/failure/incident or doing root cause analysis (5 whys, fishbone, postmortem) and visualizing the causes as a status-colored cause-effect tree, including when asked to lay analysis out as a tree — not for fixing code, patching the bug, or making a failing test pass.
 ---
 
 # debug-docs — RCA 원인 분석 뷰어

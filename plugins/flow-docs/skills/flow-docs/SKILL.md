@@ -1,6 +1,6 @@
 ---
 name: flow-docs
-description: 기획·요구사항·기능/사용자 흐름·프로세스를 개발자용 HTML 문서 + 편집 가능한 흐름 다이어그램으로 시각화해 로컬 서버로 띄울 때 사용. PRD 작성, "흐름/프로세스를 다이어그램으로 보여줘", "기획/흐름을 HTML 문서로 만들어줘", "흐름도로 시각화해줘" 같은 요청에 발동. 노드를 클릭하면 그 단계 요구사항이 보이고 흐름을 편집·저장할 수 있다. Use when creating a PRD or visualizing a feature/process/user flow as an interactive HTML document or flow diagram served locally.
+description: 기획·요구사항·기능/사용자 흐름·프로세스·절차·구조를 개발자용 HTML 문서 + 편집 가능한 흐름/구조 다이어그램으로 시각화해 로컬 서버로 띄울 때 사용. PRD 작성, "흐름/프로세스를 다이어그램으로 보여줘", "기획/요구사항을 흐름도로 시각화해줘", "이 구조 다이어그램으로 그려줘" 같은 요청에 발동. 노드를 클릭하면 그 단계 요구사항이 보이고 흐름을 편집·저장할 수 있다. 다이어그램·흐름도·구조도 전용이며 버그·장애의 원인 트리는 debug-docs가 담당한다. 기능 구현·API 작성·리팩터링이 아니라 흐름·프로세스를 문서·다이어그램으로 정리할 때만 쓴다. Use when creating a PRD or visualizing a feature/process/user/structure flow as an interactive HTML document or flow/structure diagram served locally, including when asked to lay a structure out as a diagram — not for implementing the feature or refactoring code.
 ---
 
 # flow-docs — 상호작용형 PRD 뷰어
