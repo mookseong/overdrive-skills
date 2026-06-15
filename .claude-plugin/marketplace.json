@@ -22,6 +22,13 @@
       "version": "0.1.0",
       "source": "./plugins/flow-docs",
       "author": { "name": "limseongmuk" }
+    },
+    {
+      "name": "debug-docs",
+      "description": "디버그/문제 분석을 RCA 문서 + 상태색 원인-결과 트리로 만들어 로컬 서버로 띄우는 skill",
+      "version": "0.1.0",
+      "source": "./plugins/debug-docs",
+      "author": { "name": "limseongmuk" }
     }
   ]
 }
