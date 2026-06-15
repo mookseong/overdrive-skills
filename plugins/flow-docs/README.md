@@ -12,8 +12,8 @@ PRD를 **개발자가 읽기 좋은 HTML 문서 + 편집 가능한 흐름 다이
 ## 설치
 
 ```bash
-/plugin marketplace add /Users/limseongmuk/IdeaProjects/claude-skills
-/plugin install flow-docs@claude-skills
+/plugin marketplace add mookseong/overdrive-skills
+/plugin install flow-docs@overdrive-skills
 ```
 
 설치 후 Claude Code 재시작. 이후 "이 기능 PRD를 흐름 다이어그램으로 만들어줘"처럼 요청하면 스킬이 작동한다.
