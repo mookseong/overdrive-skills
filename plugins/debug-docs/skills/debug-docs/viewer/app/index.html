@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>flow-docs</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header><h1 id="prd-title">flow-docs</h1></header>
+  <main>
+    <section id="overview" class="card"></section>
+    <div class="cols">
+      <section class="card diagram-col">
+        <h2>흐름</h2>
+        <div id="diagram"></div>
+      </section>
+      <aside class="card side-col">
+        <h2>노드 선택</h2>
+        <ul id="node-list"></ul>
+        <div id="detail-panel"><p class="muted">노드를 선택하면 요구사항이 표시됩니다.</p></div>
+      </aside>
+    </div>
+    <section id="editor" class="card">
+      <h2>편집</h2>
+      <div id="editor-controls"></div>
+      <div class="save-bar">
+        <button id="save-btn">저장</button>
+        <span id="save-status" class="muted"></span>
+      </div>
+    </section>
+  </main>
+  <script src="/vendor/marked.min.js"></script>
+  <script src="/vendor/mermaid.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
