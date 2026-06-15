@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""flow-docs 로컬 서버: 정적 앱 서빙 + prd.json 읽기/쓰기.
+"""debug-docs 로컬 서버: 정적 앱 서빙 + debug.json 읽기/쓰기.
 
 GET  /            -> app/index.html
 GET  /<asset>     -> app/ 하위 정적 파일 (traversal 차단)
-GET  /api/data    -> prd.json 내용
-POST /api/data    -> 검증 후 prd.json에 원자적 저장
+GET  /api/data    -> debug.json 내용
+POST /api/data    -> 검증 후 debug.json에 원자적 저장
 """
 import argparse
 import json
@@ -118,13 +118,13 @@ def make_handler(data_path, app_dir=APP_DIR):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description="flow-docs 로컬 서버")
-    p.add_argument("data", help="prd.json 경로")
+    p = argparse.ArgumentParser(description="debug-docs 로컬 서버")
+    p.add_argument("data", help="debug.json 경로")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--host", default="127.0.0.1")
     args = p.parse_args(argv)
     httpd = ThreadingHTTPServer((args.host, args.port), make_handler(args.data))
-    print(f"flow-docs: http://localhost:{args.port}  (data: {args.data})")
+    print(f"debug-docs: http://localhost:{args.port}  (data: {args.data})")
     print("종료: Ctrl+C")
     try:
         httpd.serve_forever()
