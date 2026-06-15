@@ -1,10 +1,14 @@
 let data = null;
 let selectedId = null;
 
+const STATUSES = ["가설", "조사중", "기각", "확정"];
+const STATUS_CLASS = { "가설": "s_hypo", "조사중": "s_invest", "기각": "s_reject", "확정": "s_confirm" };
+
 function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
+function statusOf(n) { return STATUSES.includes(n.status) ? n.status : "가설"; }
 
 function nodesToMermaid(d) {
   const lines = ["flowchart TD"];
@@ -20,6 +24,13 @@ function nodesToMermaid(d) {
   for (const n of d.nodes) {
     lines.push(`  click ${n.id} call selectNode("${n.id}")`);
   }
+  lines.push("  classDef s_hypo fill:#ddf4ff,stroke:#0969da,color:#1f2328;");
+  lines.push("  classDef s_invest fill:#fff8c5,stroke:#bf8700,color:#1f2328;");
+  lines.push("  classDef s_reject fill:#eaeef2,stroke:#afb8c1,color:#8c959f;");
+  lines.push("  classDef s_confirm fill:#ffebe9,stroke:#cf222e,color:#cf222e;");
+  for (const n of d.nodes) {
+    lines.push(`  class ${n.id} ${STATUS_CLASS[statusOf(n)]};`);
+  }
   return lines.join("\n");
 }
 
@@ -28,7 +39,7 @@ async function renderDiagram() {
   const el = document.getElementById("diagram");
   const def = nodesToMermaid(data);
   try {
-    const { svg, bindFunctions } = await mermaid.render("flowGraph_" + (++renderSeq), def);
+    const { svg, bindFunctions } = await mermaid.render("dbgGraph_" + (++renderSeq), def);
     el.innerHTML = svg;
     if (bindFunctions) bindFunctions(el);
   } catch (err) {
@@ -42,7 +53,7 @@ function renderNodeList() {
   for (const n of data.nodes) {
     const li = document.createElement("li");
     li.className = "node-item" + (n.id === selectedId ? " selected" : "");
-    li.textContent = `${n.label || ""} (${n.id})`;
+    li.textContent = `[${statusOf(n)}] ${n.label || ""} (${n.id})`;
     li.dataset.id = n.id;
     li.onclick = () => selectNode(n.id);
     ul.appendChild(li);
@@ -54,7 +65,7 @@ function selectNode(id) {
   const n = data.nodes.find((x) => x.id === id);
   const panel = document.getElementById("detail-panel");
   panel.innerHTML = n
-    ? `<h3>${escapeHtml(n.label)}</h3>` + marked.parse(n.detail || "_요구사항 없음_")
+    ? `<h3>${escapeHtml(n.label)} <span class="badge">${escapeHtml(statusOf(n))}</span></h3>` + marked.parse(n.detail || "_증거 없음_")
     : '<p class="muted">노드를 선택하세요.</p>';
   renderNodeList();
 }
@@ -63,18 +74,20 @@ function renderEditor() {
   const c = document.getElementById("editor-controls");
   c.innerHTML = "";
   const nh = document.createElement("div");
-  nh.innerHTML = "<h3>노드</h3>";
+  nh.innerHTML = "<h3>원인 노드</h3>";
   data.nodes.forEach((n, i) => {
     const row = document.createElement("div");
     row.className = "edit-row";
+    const opts = STATUSES.map((s) => `<option value="${s}"${statusOf(n) === s ? " selected" : ""}>${s}</option>`).join("");
     row.innerHTML =
       `<input data-k="id" value="${escapeAttr(n.id)}" placeholder="id" readonly title="id는 내부 식별자(편집 불가)">` +
-      `<input data-k="label" value="${escapeAttr(n.label)}" placeholder="label">` +
-      `<textarea data-k="detail" placeholder="요구사항(markdown)">${escapeHtml(n.detail || "")}</textarea>` +
+      `<input data-k="label" value="${escapeAttr(n.label)}" placeholder="원인/가설">` +
+      `<select data-k="status">${opts}</select>` +
+      `<textarea data-k="detail" placeholder="증거/판단(markdown)">${escapeHtml(n.detail || "")}</textarea>` +
       `<button data-act="del">삭제</button>`;
-    row.querySelectorAll("input,textarea").forEach((inp) => {
+    row.querySelectorAll("input,textarea,select").forEach((inp) => {
       inp.oninput = () => { n[inp.dataset.k] = inp.value; };
-      inp.onchange = () => { renderDiagram(); renderNodeList(); };
+      inp.onchange = () => { n[inp.dataset.k] = inp.value; renderDiagram(); renderNodeList(); };
     });
     row.querySelector('[data-act="del"]').onclick = () => { data.nodes.splice(i, 1); renderAll(); };
     nh.appendChild(row);
@@ -83,22 +96,22 @@ function renderEditor() {
   addN.textContent = "+ 노드";
   addN.onclick = () => {
     let k = data.nodes.length + 1;
-    while (data.nodes.some((x) => x.id === "n" + k)) k++;
-    data.nodes.push({ id: "n" + k, label: "새 단계", detail: "" });
+    while (data.nodes.some((x) => x.id === "c" + k)) k++;
+    data.nodes.push({ id: "c" + k, label: "새 가설", status: "가설", detail: "" });
     renderAll();
   };
   nh.appendChild(addN);
   c.appendChild(nh);
 
   const eh = document.createElement("div");
-  eh.innerHTML = "<h3>엣지</h3>";
+  eh.innerHTML = "<h3>연결</h3>";
   data.edges.forEach((e, i) => {
     const row = document.createElement("div");
     row.className = "edit-row";
     row.innerHTML =
       `<input data-k="from" value="${escapeAttr(e.from)}" placeholder="from id">` +
       `<input data-k="to" value="${escapeAttr(e.to)}" placeholder="to id">` +
-      `<input data-k="label" value="${escapeAttr(e.label || "")}" placeholder="label">` +
+      `<input data-k="label" value="${escapeAttr(e.label || "")}" placeholder="왜?">` +
       `<button data-act="del">삭제</button>`;
     row.querySelectorAll("input").forEach((inp) => {
       inp.oninput = () => { e[inp.dataset.k] = inp.value; };
@@ -108,8 +121,8 @@ function renderEditor() {
     eh.appendChild(row);
   });
   const addE = document.createElement("button");
-  addE.textContent = "+ 엣지";
-  addE.onclick = () => { data.edges.push({ from: "", to: "", label: "" }); renderAll(); };
+  addE.textContent = "+ 연결";
+  addE.onclick = () => { data.edges.push({ from: "", to: "", label: "왜?" }); renderAll(); };
   eh.appendChild(addE);
   c.appendChild(eh);
 }
@@ -117,7 +130,7 @@ function renderEditor() {
 function renderAll() { renderDiagram(); renderNodeList(); renderEditor(); }
 
 function render() {
-  document.getElementById("prd-title").textContent = data.title || "flow-docs";
+  document.getElementById("doc-title").textContent = data.title || "debug-docs";
   document.getElementById("overview").innerHTML = marked.parse(data.overview || "");
   renderAll();
 }
@@ -133,9 +146,7 @@ async function save() {
       body: JSON.stringify(payload),
     });
     const j = await res.json().catch(() => ({}));
-    status.textContent = res.ok
-      ? "저장됨 ✓"
-      : "실패: " + (j.details ? j.details.join(", ") : j.error || res.status);
+    status.textContent = res.ok ? "저장됨" : "실패: " + (j.details ? j.details.join(", ") : j.error || res.status);
   } catch (e) {
     status.textContent = "실패: " + e.message;
   }

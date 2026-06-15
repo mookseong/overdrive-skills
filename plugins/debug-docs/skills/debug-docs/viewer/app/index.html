@@ -3,22 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>flow-docs</title>
+  <title>debug-docs</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header><h1 id="prd-title">flow-docs</h1></header>
+  <header><h1 id="doc-title">debug-docs</h1></header>
   <main>
     <section id="overview" class="card"></section>
     <div class="cols">
       <section class="card diagram-col">
-        <h2>흐름</h2>
+        <h2>원인 트리</h2>
+        <div class="legend">
+          <span class="lg s_hypo">가설</span>
+          <span class="lg s_invest">조사중</span>
+          <span class="lg s_reject">기각</span>
+          <span class="lg s_confirm">확정</span>
+        </div>
         <div id="diagram"></div>
       </section>
       <aside class="card side-col">
         <h2>노드 선택</h2>
         <ul id="node-list"></ul>
-        <div id="detail-panel"><p class="muted">노드를 선택하면 요구사항이 표시됩니다.</p></div>
+        <div id="detail-panel"><p class="muted">노드를 선택하면 증거가 표시됩니다.</p></div>
       </aside>
     </div>
     <section id="editor" class="card">
