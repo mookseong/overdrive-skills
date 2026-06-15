@@ -1,6 +1,6 @@
 ---
 name: debug-docs
-description: 버그/장애/문제를 분석할 때 사용. RCA(근본원인 분석) 문서를 쓰고 증상→가설→근본원인을 상태색 원인-결과 트리로 HTML 시각화해 로컬 서버로 띄운다. 노드를 클릭하면 증거가 보이고 상태(가설/조사중/기각/확정)를 편집·저장한다. Use when debugging or doing root cause analysis of a problem.
+description: 버그·장애·에러·실패·이상 동작의 원인을 찾거나 디버깅·근본원인 분석(RCA)·사후분석(postmortem)을 할 때 사용. "왜 안 되는지", "원인 분석해줘", "디버깅", "장애/원인을 트리로 시각화해줘", "원인 분석을 HTML로 만들어줘/보여줘" 같은 요청에 발동. 증상→가설→근본원인을 상태색(가설/조사중/기각/확정) 원인-결과 트리로 HTML 시각화하고 로컬 서버로 띄우며, 노드 클릭 시 증거 표시·상태 편집·저장한다. Use when debugging, investigating a failure/incident, or doing root cause analysis (5 whys, fishbone, postmortem), or when asked to visualize the cause of a bug as an HTML diagram.
 ---
 
 # debug-docs — RCA 원인 분석 뷰어
