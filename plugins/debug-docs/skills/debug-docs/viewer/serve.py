@@ -46,15 +46,19 @@ def make_handler(data_path, app_dir=APP_DIR):
                 self._send(200, body, CONTENT_TYPES[".json"])
                 return
             rel = "index.html" if path == "/" else path.lstrip("/")
-            target = (app_dir / rel).resolve()
-            if target != app_dir and not str(target).startswith(str(app_dir) + os.sep):
-                self._send(403, b"forbidden")
-                return
-            if not target.is_file():
+            try:
+                target = (app_dir / rel).resolve()
+                if target != app_dir and not str(target).startswith(str(app_dir) + os.sep):
+                    self._send(403, b"forbidden")
+                    return
+                if not target.is_file():
+                    self._send(404, b"not found")
+                    return
+                ctype = CONTENT_TYPES.get(target.suffix.lower(), "application/octet-stream")
+                self._send(200, target.read_bytes(), ctype)
+            except (OSError, ValueError):
+                # 잘못된 경로(널바이트 등)·읽기 직전 삭제(TOCTOU) 등 → 404로 안전 응답.
                 self._send(404, b"not found")
-                return
-            ctype = CONTENT_TYPES.get(target.suffix, "application/octet-stream")
-            self._send(200, target.read_bytes(), ctype)
 
         def log_message(self, *args):
             pass

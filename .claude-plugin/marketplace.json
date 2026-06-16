@@ -1,7 +1,7 @@
 {
   "name": "overdrive-skills",
   "owner": {
-    "name": "limseongmuk",
+    "name": "mookseong",
     "email": "kmkook12312@gmail.com"
   },
   "metadata": {
@@ -12,23 +12,20 @@
     {
       "name": "readable-docs",
       "description": "읽기 좋은 한국어 기술/API 문서 작법을 강제하는 skill + 구조 가독성 게이트 hook",
-      "version": "0.1.0",
       "source": "./plugins/readable-docs",
-      "author": { "name": "limseongmuk" }
+      "author": { "name": "mookseong" }
     },
     {
       "name": "flow-docs",
       "description": "기획·요구사항·PRD를 사람이 읽는 보고서 HTML로 만들고 상황에 맞는 차트(순서도/수영선도/마인드맵 등)를 섹션에 곁들여 로컬 서버로 띄우는 skill",
-      "version": "0.1.0",
       "source": "./plugins/flow-docs",
-      "author": { "name": "limseongmuk" }
+      "author": { "name": "mookseong" }
     },
     {
       "name": "debug-docs",
-      "description": "디버깅 상황을 상황에 맞는 다이어그램(시퀀스/클래스/상태/플로우차트/원인트리)으로 즉시 시각화해 로컬 서버로 띄우는 skill",
-      "version": "0.1.0",
+      "description": "디버깅·문제 분석을 사람이 읽는 보고서 HTML로 만들고 상황에 맞는 차트(시퀀스/클래스/상태/플로우차트/원인트리 등)를 섹션에 곁들여 로컬 서버로 띄우는 skill",
       "source": "./plugins/debug-docs",
-      "author": { "name": "limseongmuk" }
+      "author": { "name": "mookseong" }
     }
   ]
 }

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "읽기 좋은 한국어 기술/API 문서 작법을 강제하는 skill과 구조 가독성 게이트 hook. readable docs, technical/API documentation, 문서화, 가독성, 요약.",
   "author": {
-    "name": "limseongmuk",
+    "name": "mookseong",
     "email": "kmkook12312@gmail.com"
   },
   "license": "MIT",

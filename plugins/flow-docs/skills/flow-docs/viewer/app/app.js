@@ -4,23 +4,24 @@ function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// marked 출력을 안전화한다. inert한 DOMParser 문서로 파싱하므로(라이브 DOM 아님)
-// 이미지 로드·스크립트가 실행되지 않는다. 그 위에서 위험 요소/이벤트 핸들러/나쁜 스킴을 제거한다.
-// (marked는 raw HTML 블록을 그대로 통과시키므로 <img onerror> 같은 주입을 여기서 차단한다.)
+// marked 출력을 안전화해 host에 직접 채운다. inert한 DOMParser 문서로 파싱하므로(라이브 DOM 아님)
+// 이미지 로드·스크립트가 실행되지 않는다. 위험 요소/이벤트 핸들러/style/나쁜 스킴을 제거한 뒤,
+// 직렬화→재파싱(문자열 innerHTML) 없이 노드를 importNode로 그대로 채택한다 → mutation-XSS 표면 제거.
+// (marked는 raw HTML 블록을 통과시키므로 <img onerror>·외부 url(style) 등을 여기서 차단한다.)
 const SAFE_URL = /^(https?:|mailto:|#|\/|\.)/i;
-function safeMarked(md) {
+function sanitizeInto(host, md) {
   const doc = new DOMParser().parseFromString(marked.parse(md || ""), "text/html");
   doc.querySelectorAll("script,iframe,object,embed,link,meta,style,base,form,input,button").forEach((el) => el.remove());
   doc.querySelectorAll("*").forEach((el) => {
     for (const attr of [...el.attributes]) {
       const name = attr.name.toLowerCase();
-      if (name.startsWith("on")) { el.removeAttribute(attr.name); continue; }
+      if (name.startsWith("on") || name === "style") { el.removeAttribute(attr.name); continue; }
       if ((name === "href" || name === "src" || name === "xlink:href") && !SAFE_URL.test(attr.value.trim())) {
         el.removeAttribute(attr.name);
       }
     }
   });
-  return doc.body.innerHTML;
+  host.replaceChildren(...Array.from(doc.body.childNodes).map((n) => document.importNode(n, true)));
 }
 
 let renderSeq = 0;
@@ -41,7 +42,7 @@ async function renderChart(b, host) {
   if (b.note) {
     const note = document.createElement("div");
     note.className = "note";
-    note.innerHTML = safeMarked(b.note);
+    sanitizeInto(note, b.note);
     fig.appendChild(note);
   }
   host.appendChild(fig);
@@ -51,10 +52,13 @@ async function renderChart(b, host) {
     holder.innerHTML = '<pre class="error">mermaid 코드가 비어 있습니다.</pre>';
     return;
   }
+  const gid = "dbgGraph_" + (++renderSeq);
   try {
-    const { svg } = await mermaid.render("dbgGraph_" + (++renderSeq), code);
+    const { svg } = await mermaid.render(gid, code);
     holder.innerHTML = svg;
   } catch (err) {
+    // mermaid가 렌더 실패 시 <body> 아래 남기는 임시 컨테이너(id="d"+gid)를 정리한다.
+    document.getElementById("d" + gid)?.remove();
     holder.innerHTML =
       '<pre class="error">차트 렌더 실패\n' +
       escapeHtml(err && err.message) +
@@ -67,7 +71,7 @@ async function renderChart(b, host) {
 function renderMarkdown(b, host) {
   const sec = document.createElement("section");
   sec.className = "md";
-  sec.innerHTML = safeMarked(b.content);
+  sanitizeInto(sec, b.content);
   host.appendChild(sec);
 }
 
@@ -96,8 +100,17 @@ async function render() {
 }
 
 async function load() {
-  const res = await fetch("/api/data");
-  data = await res.json();
+  const host = document.getElementById("report");
+  try {
+    const res = await fetch("/api/data");
+    data = await res.json();
+  } catch (err) {
+    host.innerHTML =
+      '<pre class="error">데이터를 불러오지 못했습니다(JSON 오류일 수 있음)\n' +
+      escapeHtml(err && err.message) +
+      "</pre>";
+    return;
+  }
   render();
 }
 

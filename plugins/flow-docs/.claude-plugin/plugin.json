@@ -2,7 +2,7 @@
   "name": "flow-docs",
   "version": "0.1.0",
   "description": "기획·요구사항·PRD를 사람이 읽는 보고서 형태 HTML로 만들고 상황에 맞는 차트(순서도/수영선도/마인드맵/조직도/사이트맵 등)를 섹션에 곁들여 로컬 서버로 띄운다. PRD, flow diagram, mindmap, Mermaid, 요구사항 문서, 시각화.",
-  "author": { "name": "limseongmuk", "email": "kmkook12312@gmail.com" },
+  "author": { "name": "mookseong", "email": "kmkook12312@gmail.com" },
   "license": "MIT",
   "keywords": ["prd", "flow", "diagram", "mindmap", "mermaid", "report", "기획", "시각화"]
 }
