@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""debug-docs 로컬 서버(보기 전용): 정적 앱 + debug.json 서빙.
+"""보고서 뷰어 로컬 서버(보기 전용): 정적 앱 + 데이터(JSON) 서빙.
 
 GET  /            -> app/index.html
 GET  /<asset>     -> app/ 하위 정적 파일 (traversal 차단)
-GET  /api/data    -> debug.json 내용
-저장(POST)은 없다 — debug-docs는 다이어그램을 빠르게 보여주는 뷰어다.
+GET  /api/data    -> 데이터 JSON 내용
+저장(POST)은 없다 — 보고서와 차트를 빠르게 보여주는 뷰어다.
 """
 import argparse
 import os
@@ -63,13 +63,13 @@ def make_handler(data_path, app_dir=APP_DIR):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description="debug-docs 로컬 서버(보기 전용)")
-    p.add_argument("data", help="debug.json 경로")
+    p = argparse.ArgumentParser(description="보고서 뷰어 로컬 서버(보기 전용)")
+    p.add_argument("data", help="데이터 JSON 경로(예: debug.json / prd.json)")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--host", default="127.0.0.1")
     args = p.parse_args(argv)
     httpd = ThreadingHTTPServer((args.host, args.port), make_handler(args.data))
-    print(f"debug-docs: http://localhost:{args.port}  (data: {args.data})")
+    print(f"report viewer: http://localhost:{args.port}  (data: {args.data})")
     print("종료: Ctrl+C")
     try:
         httpd.serve_forever()

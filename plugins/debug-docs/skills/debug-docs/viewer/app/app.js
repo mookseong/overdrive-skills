@@ -4,16 +4,23 @@ function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// marked로 렌더한 뒤, 안전하지 않은 링크 스킴(javascript: 등)을 제거한다.
-// marked는 raw HTML은 이스케이프하지만 [x](javascript:..) 링크 href는 막지 않으므로 방어적으로 차단.
+// marked 출력을 안전화한다. inert한 DOMParser 문서로 파싱하므로(라이브 DOM 아님)
+// 이미지 로드·스크립트가 실행되지 않는다. 그 위에서 위험 요소/이벤트 핸들러/나쁜 스킴을 제거한다.
+// (marked는 raw HTML 블록을 그대로 통과시키므로 <img onerror> 같은 주입을 여기서 차단한다.)
+const SAFE_URL = /^(https?:|mailto:|#|\/|\.)/i;
 function safeMarked(md) {
-  const tmp = document.createElement("div");
-  tmp.innerHTML = marked.parse(md || "");
-  tmp.querySelectorAll("a[href]").forEach((a) => {
-    const href = (a.getAttribute("href") || "").trim();
-    if (!/^(https?:|mailto:|#|\/|\.)/i.test(href)) a.removeAttribute("href");
+  const doc = new DOMParser().parseFromString(marked.parse(md || ""), "text/html");
+  doc.querySelectorAll("script,iframe,object,embed,link,meta,style,base,form,input,button").forEach((el) => el.remove());
+  doc.querySelectorAll("*").forEach((el) => {
+    for (const attr of [...el.attributes]) {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith("on")) { el.removeAttribute(attr.name); continue; }
+      if ((name === "href" || name === "src" || name === "xlink:href") && !SAFE_URL.test(attr.value.trim())) {
+        el.removeAttribute(attr.name);
+      }
+    }
   });
-  return tmp.innerHTML;
+  return doc.body.innerHTML;
 }
 
 let renderSeq = 0;
