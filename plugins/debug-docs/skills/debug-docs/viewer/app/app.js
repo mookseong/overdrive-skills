@@ -73,5 +73,6 @@ async function load() {
   render();
 }
 
-mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
+// 보기 전용이라 클릭 바인딩이 없다 → securityLevel을 strict로 둬 라벨 내 HTML/스크립트를 인코딩(XSS 표면 축소).
+mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
 load();
