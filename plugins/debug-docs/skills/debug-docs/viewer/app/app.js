@@ -4,6 +4,18 @@ function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// marked로 렌더한 뒤, 안전하지 않은 링크 스킴(javascript: 등)을 제거한다.
+// marked는 raw HTML은 이스케이프하지만 [x](javascript:..) 링크 href는 막지 않으므로 방어적으로 차단.
+function safeMarked(md) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = marked.parse(md || "");
+  tmp.querySelectorAll("a[href]").forEach((a) => {
+    const href = (a.getAttribute("href") || "").trim();
+    if (!/^(https?:|mailto:|#|\/|\.)/i.test(href)) a.removeAttribute("href");
+  });
+  return tmp.innerHTML;
+}
+
 let renderSeq = 0;
 // 다이어그램 1개를 카드로 렌더. mermaid 코드는 스킬이 작성한 그대로 렌더하며,
 // 실패해도 이 카드에만 에러를 표시하고 다른 카드/페이지는 유지한다.
@@ -23,7 +35,7 @@ async function renderDiagram(d) {
   if (d.note) {
     const note = document.createElement("div");
     note.className = "note";
-    note.innerHTML = marked.parse(d.note);
+    note.innerHTML = safeMarked(d.note);
     card.appendChild(note);
   }
   document.getElementById("diagrams").appendChild(card);
@@ -50,7 +62,7 @@ async function render() {
   document.getElementById("doc-title").textContent = data.title || "debug-docs";
   const ov = document.getElementById("overview");
   if (data.overview) {
-    ov.innerHTML = marked.parse(data.overview);
+    ov.innerHTML = safeMarked(data.overview);
   } else {
     ov.style.display = "none";
   }
