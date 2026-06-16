@@ -1,8 +1,7 @@
-"""flow-docs 브라우저 왕복 스모크: 렌더→선택→편집→저장→영속.
-실행: python3 test_browser_smoke.py   (성공 시 'SMOKE OK', exit 0)
+"""flow-docs 브라우저 스모크: blocks 보고서(PRD 섹션 + 인라인 차트) 렌더 + 에러 격리.
+실행: ~/.cache/flowdocs-venv/bin/python test_browser_smoke.py  (성공 시 'SMOKE OK', exit 0)
 """
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -14,10 +13,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 VIEWER = HERE.parent / "viewer"
 SAMPLE = HERE.parent / "examples" / "sample-prd.json"
-PORT = 8791
+PORT = 8796
 
 
-def wait_up(url, tries=50):
+def wait_up(url, tries=60):
     for _ in range(tries):
         try:
             urllib.request.urlopen(url)
@@ -32,41 +31,35 @@ def main():
 
     work = Path(tempfile.mkdtemp())
     data = work / "prd.json"
-    shutil.copy(SAMPLE, data)
+    doc = json.loads(SAMPLE.read_text(encoding="utf-8"))
+    ok_charts = sum(1 for b in doc["blocks"] if b.get("type") == "chart")
+    doc["blocks"].append({"type": "chart", "title": "깨진 것", "chartType": "flowchart", "mermaid": "flowchart TD\n  ((("})
+    data.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
     proc = subprocess.Popen([sys.executable, str(VIEWER / "serve.py"), str(data), "--port", str(PORT)])
     try:
         assert wait_up(f"http://127.0.0.1:{PORT}/api/data"), "server did not start"
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page()
+            errs = []
+            page.on("pageerror", lambda e: errs.append(str(e)))
             page.goto(f"http://127.0.0.1:{PORT}/")
-            # 1) 다이어그램 렌더 (sample 엣지 라벨에 괄호가 있어 Mermaid 괄호 처리 회귀도 함께 검증)
-            page.wait_for_selector("#diagram svg", timeout=10000)
-            assert page.locator("#diagram .error").count() == 0, "diagram render error (Mermaid label?)"
-            assert page.locator("#node-list .node-item").count() == 3, "node list not rendered"
-            # 2) 선택(목록) → detail 표시
-            page.locator('#node-list .node-item[data-id="n1"]').click()
-            page.wait_for_selector("#detail-panel h3")
-            assert "장바구니" in page.locator("#detail-panel").inner_text()
-            # 2b) 선택(다이어그램 SVG 노드 클릭) → detail 갱신 (Mermaid click 디렉티브 + bindFunctions)
-            page.locator("#diagram svg .node", has_text="결제수단 선택").first.click()
+            page.wait_for_selector("#report .chart .diagram svg", timeout=10000)
             page.wait_for_function(
-                "document.getElementById('detail-panel').innerText.includes('결제수단 선택')",
-                timeout=5000,
+                f"document.querySelectorAll('#report .chart .diagram svg').length >= {ok_charts}",
+                timeout=10000,
             )
-            # 3) 편집: 첫 노드 라벨 변경 → 저장
-            label_input = page.locator('.edit-row input[data-k="label"]').first
-            label_input.fill("장바구니(변경)")
-            label_input.dispatch_event("change")
-            page.locator("#save-btn").click()
-            page.wait_for_function("document.getElementById('save-status').textContent.includes('저장됨')", timeout=5000)
-            # 4) 새로고침 → 영속 확인
-            page.reload()
-            page.wait_for_selector("#node-list .node-item")
-            assert "장바구니(변경)" in page.locator("#node-list").inner_text(), "edit not persisted"
+            svgs = page.locator("#report .chart .diagram svg").count()
+            assert svgs >= ok_charts, f"svg {svgs} < {ok_charts}"
+            assert page.locator("#report .md").count() >= 6, "PRD sections missing"
+            body = page.locator("#report").inner_text()
+            # PRD 구조 섹션 + 마인드맵(네이티브) 렌더 확인
+            assert "문제 정의" in body, "PRD section missing"
+            assert "ASIS" in body, "ASIS-TOBE section missing"
+            assert "노쇼 원인" in body, "mindmap not rendered"
+            assert page.locator(".diagram .error").count() == 1, "broken chart should isolate to one error"
+            assert errs == [], f"page errors: {errs}"
             browser.close()
-        saved = json.loads(data.read_text(encoding="utf-8"))
-        assert saved["nodes"][0]["label"] == "장바구니(변경)", "file not updated"
         print("SMOKE OK")
     finally:
         proc.terminate()

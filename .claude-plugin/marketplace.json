@@ -18,7 +18,7 @@
     },
     {
       "name": "flow-docs",
-      "description": "PRD를 개발자용 HTML 문서 + 편집 가능한 Mermaid 흐름으로 만들어 로컬 서버로 띄우는 skill",
+      "description": "기획·요구사항·PRD를 사람이 읽는 보고서 HTML로 만들고 상황에 맞는 차트(순서도/수영선도/마인드맵 등)를 섹션에 곁들여 로컬 서버로 띄우는 skill",
       "version": "0.1.0",
       "source": "./plugins/flow-docs",
       "author": { "name": "limseongmuk" }

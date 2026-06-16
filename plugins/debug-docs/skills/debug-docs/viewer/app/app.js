@@ -17,30 +17,29 @@ function safeMarked(md) {
 }
 
 let renderSeq = 0;
-// 다이어그램 1개를 카드로 렌더. mermaid 코드는 스킬이 작성한 그대로 렌더하며,
-// 실패해도 이 카드에만 에러를 표시하고 다른 카드/페이지는 유지한다.
-async function renderDiagram(d) {
-  const card = document.createElement("section");
-  card.className = "card diagram-card";
-  const head = document.createElement("div");
-  head.className = "diagram-head";
-  const typeBadge = d.type ? `<span class="type">${escapeHtml(d.type)}</span>` : "";
-  head.innerHTML = `<h2>${escapeHtml(d.title || "다이어그램")}</h2>${typeBadge}`;
-  card.appendChild(head);
-
+// 차트 블록 1개를 figure로 렌더. mermaid 코드는 스킬이 작성한 그대로 렌더하며,
+// 실패해도 이 figure에만 에러를 표시하고 보고서의 나머지는 유지한다.
+async function renderChart(b, host) {
+  const fig = document.createElement("figure");
+  fig.className = "chart";
+  if (b.title) {
+    const cap = document.createElement("figcaption");
+    const typeBadge = b.chartType ? `<span class="type">${escapeHtml(b.chartType)}</span>` : "";
+    cap.innerHTML = `<span class="chart-title">${escapeHtml(b.title)}</span>${typeBadge}`;
+    fig.appendChild(cap);
+  }
   const holder = document.createElement("div");
   holder.className = "diagram";
-  card.appendChild(holder);
-
-  if (d.note) {
+  fig.appendChild(holder);
+  if (b.note) {
     const note = document.createElement("div");
     note.className = "note";
-    note.innerHTML = safeMarked(d.note);
-    card.appendChild(note);
+    note.innerHTML = safeMarked(b.note);
+    fig.appendChild(note);
   }
-  document.getElementById("diagrams").appendChild(card);
+  host.appendChild(fig);
 
-  const code = String(d.mermaid || "").trim();
+  const code = String(b.mermaid || "").trim();
   if (!code) {
     holder.innerHTML = '<pre class="error">mermaid 코드가 비어 있습니다.</pre>';
     return;
@@ -50,7 +49,7 @@ async function renderDiagram(d) {
     holder.innerHTML = svg;
   } catch (err) {
     holder.innerHTML =
-      '<pre class="error">다이어그램 렌더 실패\n' +
+      '<pre class="error">차트 렌더 실패\n' +
       escapeHtml(err && err.message) +
       "\n\n--- mermaid ---\n" +
       escapeHtml(code) +
@@ -58,24 +57,34 @@ async function renderDiagram(d) {
   }
 }
 
+function renderMarkdown(b, host) {
+  const sec = document.createElement("section");
+  sec.className = "md";
+  sec.innerHTML = safeMarked(b.content);
+  host.appendChild(sec);
+}
+
 async function render() {
-  document.getElementById("doc-title").textContent = data.title || "debug-docs";
-  const ov = document.getElementById("overview");
-  if (data.overview) {
-    ov.innerHTML = safeMarked(data.overview);
-  } else {
-    ov.style.display = "none";
-  }
-  const wrap = document.getElementById("diagrams");
-  wrap.innerHTML = "";
-  const diagrams = Array.isArray(data.diagrams) ? data.diagrams : [];
-  if (!diagrams.length) {
-    wrap.innerHTML = '<section class="card"><p class="muted">표시할 다이어그램이 없습니다.</p></section>';
+  document.getElementById("doc-title").textContent = data.title || "report";
+  const host = document.getElementById("report");
+  host.innerHTML = "";
+  const blocks = Array.isArray(data.blocks) ? data.blocks : [];
+  if (!blocks.length) {
+    host.innerHTML = '<p class="muted">표시할 내용이 없습니다.</p>';
     return;
   }
-  // 순서를 유지하기 위해 직렬 렌더(고유 id가 보장되고 카드 순서가 데이터 순서와 일치).
-  for (const d of diagrams) {
-    await renderDiagram(d);
+  // 순서대로(위에서 아래로) 렌더: 마크다운 섹션과 차트가 보고서 흐름에 인라인으로 배치된다.
+  for (const b of blocks) {
+    if (b && b.type === "chart") {
+      await renderChart(b, host);
+    } else if (b && (b.type === "markdown" || typeof b.content === "string")) {
+      renderMarkdown(b, host);
+    } else {
+      const warn = document.createElement("section");
+      warn.className = "md";
+      warn.innerHTML = '<pre class="error">알 수 없는 블록(무시됨)</pre>';
+      host.appendChild(warn);
+    }
   }
 }
 

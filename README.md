@@ -7,7 +7,7 @@ AI 워크플로우를 Claude Code plugin으로 패키징한 미니 marketplace.
 | plugin | 설명 | 자세히 |
 |---|---|---|
 | **readable-docs** | 읽기 좋은 한국어 기술/API 문서 작법을 skill로 강제하고, 문서 저장 시 구조 누락을 잡는 hook을 둔다. | [README](plugins/readable-docs/README.md) |
-| **flow-docs** | PRD를 개발자용 HTML 문서 + 편집 가능한 흐름 다이어그램으로 만들어 로컬 서버로 띄운다. 노드 클릭 시 그 단계 요구사항을 보여주고, 흐름 편집을 파일로 저장한다. | [README](plugins/flow-docs/README.md) |
+| **flow-docs** | 기획·요구사항·PRD를 사람이 읽는 보고서 HTML로 만들고, 상황에 맞는 차트(순서도/수영선도/마인드맵 등)를 섹션 안에 곁들여 로컬 서버로 띄운다(보기 전용). | [README](plugins/flow-docs/README.md) |
 | **debug-docs** | 디버깅 상황을 상황에 맞는 다이어그램(시퀀스/클래스/상태/플로우차트/원인트리)으로 즉시 시각화해 로컬 서버로 띄운다. 코드/설명을 분석해 가장 맞는 Mermaid 다이어그램을 그린다(보기 전용). | [README](plugins/debug-docs/README.md) |
 
 ## 설치

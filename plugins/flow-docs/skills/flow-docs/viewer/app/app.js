@@ -1,143 +1,90 @@
 let data = null;
-let selectedId = null;
 
 function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
 
-function nodesToMermaid(d) {
-  const lines = ["flowchart TD"];
-  for (const n of d.nodes) {
-    const label = String(n.label || n.id).replace(/"/g, "'");
-    lines.push(`  ${n.id}["${label}"]`);
-  }
-  for (const e of d.edges) {
-    if (!e.from || !e.to) continue;
-    const lbl = e.label ? `|"${String(e.label).replace(/"/g, "'")}"|` : "";
-    lines.push(`  ${e.from} -->${lbl} ${e.to}`);
-  }
-  for (const n of d.nodes) {
-    lines.push(`  click ${n.id} call selectNode("${n.id}")`);
-  }
-  return lines.join("\n");
+// marked로 렌더한 뒤, 안전하지 않은 링크 스킴(javascript: 등)을 제거한다.
+// marked는 raw HTML은 이스케이프하지만 [x](javascript:..) 링크 href는 막지 않으므로 방어적으로 차단.
+function safeMarked(md) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = marked.parse(md || "");
+  tmp.querySelectorAll("a[href]").forEach((a) => {
+    const href = (a.getAttribute("href") || "").trim();
+    if (!/^(https?:|mailto:|#|\/|\.)/i.test(href)) a.removeAttribute("href");
+  });
+  return tmp.innerHTML;
 }
 
 let renderSeq = 0;
-async function renderDiagram() {
-  const el = document.getElementById("diagram");
-  const def = nodesToMermaid(data);
+// 차트 블록 1개를 figure로 렌더. mermaid 코드는 스킬이 작성한 그대로 렌더하며,
+// 실패해도 이 figure에만 에러를 표시하고 보고서의 나머지는 유지한다.
+async function renderChart(b, host) {
+  const fig = document.createElement("figure");
+  fig.className = "chart";
+  if (b.title) {
+    const cap = document.createElement("figcaption");
+    const typeBadge = b.chartType ? `<span class="type">${escapeHtml(b.chartType)}</span>` : "";
+    cap.innerHTML = `<span class="chart-title">${escapeHtml(b.title)}</span>${typeBadge}`;
+    fig.appendChild(cap);
+  }
+  const holder = document.createElement("div");
+  holder.className = "diagram";
+  fig.appendChild(holder);
+  if (b.note) {
+    const note = document.createElement("div");
+    note.className = "note";
+    note.innerHTML = safeMarked(b.note);
+    fig.appendChild(note);
+  }
+  host.appendChild(fig);
+
+  const code = String(b.mermaid || "").trim();
+  if (!code) {
+    holder.innerHTML = '<pre class="error">mermaid 코드가 비어 있습니다.</pre>';
+    return;
+  }
   try {
-    const { svg, bindFunctions } = await mermaid.render("flowGraph_" + (++renderSeq), def);
-    el.innerHTML = svg;
-    if (bindFunctions) bindFunctions(el);
+    const { svg } = await mermaid.render("dbgGraph_" + (++renderSeq), code);
+    holder.innerHTML = svg;
   } catch (err) {
-    el.innerHTML = '<pre class="error">다이어그램 렌더 실패\n' + escapeHtml(err && err.message) + "</pre>";
+    holder.innerHTML =
+      '<pre class="error">차트 렌더 실패\n' +
+      escapeHtml(err && err.message) +
+      "\n\n--- mermaid ---\n" +
+      escapeHtml(code) +
+      "</pre>";
   }
 }
 
-function renderNodeList() {
-  const ul = document.getElementById("node-list");
-  ul.innerHTML = "";
-  for (const n of data.nodes) {
-    const li = document.createElement("li");
-    li.className = "node-item" + (n.id === selectedId ? " selected" : "");
-    li.textContent = `${n.label || ""} (${n.id})`;
-    li.dataset.id = n.id;
-    li.onclick = () => selectNode(n.id);
-    ul.appendChild(li);
+function renderMarkdown(b, host) {
+  const sec = document.createElement("section");
+  sec.className = "md";
+  sec.innerHTML = safeMarked(b.content);
+  host.appendChild(sec);
+}
+
+async function render() {
+  document.getElementById("doc-title").textContent = data.title || "report";
+  const host = document.getElementById("report");
+  host.innerHTML = "";
+  const blocks = Array.isArray(data.blocks) ? data.blocks : [];
+  if (!blocks.length) {
+    host.innerHTML = '<p class="muted">표시할 내용이 없습니다.</p>';
+    return;
   }
-}
-
-function selectNode(id) {
-  selectedId = id;
-  const n = data.nodes.find((x) => x.id === id);
-  const panel = document.getElementById("detail-panel");
-  panel.innerHTML = n
-    ? `<h3>${escapeHtml(n.label)}</h3>` + marked.parse(n.detail || "_요구사항 없음_")
-    : '<p class="muted">노드를 선택하세요.</p>';
-  renderNodeList();
-}
-
-function renderEditor() {
-  const c = document.getElementById("editor-controls");
-  c.innerHTML = "";
-  const nh = document.createElement("div");
-  nh.innerHTML = "<h3>노드</h3>";
-  data.nodes.forEach((n, i) => {
-    const row = document.createElement("div");
-    row.className = "edit-row";
-    row.innerHTML =
-      `<input data-k="id" value="${escapeAttr(n.id)}" placeholder="id" readonly title="id는 내부 식별자(편집 불가)">` +
-      `<input data-k="label" value="${escapeAttr(n.label)}" placeholder="label">` +
-      `<textarea data-k="detail" placeholder="요구사항(markdown)">${escapeHtml(n.detail || "")}</textarea>` +
-      `<button data-act="del">삭제</button>`;
-    row.querySelectorAll("input,textarea").forEach((inp) => {
-      inp.oninput = () => { n[inp.dataset.k] = inp.value; };
-      inp.onchange = () => { renderDiagram(); renderNodeList(); };
-    });
-    row.querySelector('[data-act="del"]').onclick = () => { data.nodes.splice(i, 1); renderAll(); };
-    nh.appendChild(row);
-  });
-  const addN = document.createElement("button");
-  addN.textContent = "+ 노드";
-  addN.onclick = () => {
-    let k = data.nodes.length + 1;
-    while (data.nodes.some((x) => x.id === "n" + k)) k++;
-    data.nodes.push({ id: "n" + k, label: "새 단계", detail: "" });
-    renderAll();
-  };
-  nh.appendChild(addN);
-  c.appendChild(nh);
-
-  const eh = document.createElement("div");
-  eh.innerHTML = "<h3>엣지</h3>";
-  data.edges.forEach((e, i) => {
-    const row = document.createElement("div");
-    row.className = "edit-row";
-    row.innerHTML =
-      `<input data-k="from" value="${escapeAttr(e.from)}" placeholder="from id">` +
-      `<input data-k="to" value="${escapeAttr(e.to)}" placeholder="to id">` +
-      `<input data-k="label" value="${escapeAttr(e.label || "")}" placeholder="label">` +
-      `<button data-act="del">삭제</button>`;
-    row.querySelectorAll("input").forEach((inp) => {
-      inp.oninput = () => { e[inp.dataset.k] = inp.value; };
-      inp.onchange = () => { renderDiagram(); };
-    });
-    row.querySelector('[data-act="del"]').onclick = () => { data.edges.splice(i, 1); renderAll(); };
-    eh.appendChild(row);
-  });
-  const addE = document.createElement("button");
-  addE.textContent = "+ 엣지";
-  addE.onclick = () => { data.edges.push({ from: "", to: "", label: "" }); renderAll(); };
-  eh.appendChild(addE);
-  c.appendChild(eh);
-}
-
-function renderAll() { renderDiagram(); renderNodeList(); renderEditor(); }
-
-function render() {
-  document.getElementById("prd-title").textContent = data.title || "flow-docs";
-  document.getElementById("overview").innerHTML = marked.parse(data.overview || "");
-  renderAll();
-}
-
-async function save() {
-  const status = document.getElementById("save-status");
-  status.textContent = "저장 중...";
-  try {
-    const payload = { ...data, edges: data.edges.filter((e) => e.from && e.to) };
-    const res = await fetch("/api/data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const j = await res.json().catch(() => ({}));
-    status.textContent = res.ok
-      ? "저장됨 ✓"
-      : "실패: " + (j.details ? j.details.join(", ") : j.error || res.status);
-  } catch (e) {
-    status.textContent = "실패: " + e.message;
+  // 순서대로(위에서 아래로) 렌더: 마크다운 섹션과 차트가 보고서 흐름에 인라인으로 배치된다.
+  for (const b of blocks) {
+    if (b && b.type === "chart") {
+      await renderChart(b, host);
+    } else if (b && (b.type === "markdown" || typeof b.content === "string")) {
+      renderMarkdown(b, host);
+    } else {
+      const warn = document.createElement("section");
+      warn.className = "md";
+      warn.innerHTML = '<pre class="error">알 수 없는 블록(무시됨)</pre>';
+      host.appendChild(warn);
+    }
   }
 }
 
@@ -147,7 +94,6 @@ async function load() {
   render();
 }
 
-window.selectNode = selectNode;
-mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
-document.getElementById("save-btn").onclick = save;
+// 보기 전용이라 클릭 바인딩이 없다 → securityLevel을 strict로 둬 라벨 내 HTML/스크립트를 인코딩(XSS 표면 축소).
+mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
 load();
