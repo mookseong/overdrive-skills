@@ -1,175 +1,69 @@
 let data = null;
-let selectedId = null;
-
-const STATUSES = ["가설", "조사중", "기각", "확정"];
-const STATUS_CLASS = { "가설": "s_hypo", "조사중": "s_invest", "기각": "s_reject", "확정": "s_confirm" };
 
 function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
-function statusOf(n) { return STATUSES.includes(n.status) ? n.status : "가설"; }
-
-// Mermaid 라벨에 사용자 텍스트를 안전히 넣는다: 특수문자(" < > & #)를 Mermaid 십진 엔티티 코드(#NN;)로
-// 단일 패스 치환(콜백이라 치환 결과인 #NN;이 다시 매칭되지 않아 이중 이스케이프가 없다).
-// htmlLabels 환경에서 " 따옴표 종료 / <태그> 스트립 / &엔티티; 디코드 / #NN; 엔티티 해석으로
-// 라벨이 깨지거나 글자가 사라지는 것을 막는다.
-const MERMAID_LABEL_ESC = { "&": "#38;", '"': "#34;", "#": "#35;", "<": "#60;", ">": "#62;" };
-function escapeMermaidLabel(s) {
-  return String(s).replace(/[&"#<>]/g, (c) => MERMAID_LABEL_ESC[c]);
-}
-
-// 사용자 노드 id는 공백/메타문자(< " # 등)를 가질 수 있어 Mermaid 식별자로 그대로 쓰면 파싱이 깨진다.
-// 렌더마다 안전한 합성 id(n0, n1...)로 디커플하고, 다이어그램 클릭은 합성 id로 원본 id를 되찾아 selectNode를 부른다.
-// 따라서 Mermaid 정의 어디에도 사용자 제어 문자열이 식별자로 들어가지 않는다(라벨은 escapeMermaidLabel로 별도 처리).
-let midToId = {};
-function nodesToMermaid(d) {
-  const lines = ["flowchart TD"];
-  const mid = new Map();
-  midToId = {};
-  d.nodes.forEach((n, i) => { mid.set(n.id, "n" + i); midToId["n" + i] = n.id; });
-  for (const n of d.nodes) {
-    const label = escapeMermaidLabel(n.label || n.id);
-    lines.push(`  ${mid.get(n.id)}["${label}"]`);
-  }
-  for (const e of d.edges) {
-    if (!e.from || !e.to || !mid.has(e.from) || !mid.has(e.to)) continue;
-    const lbl = e.label ? `|"${escapeMermaidLabel(e.label)}"|` : "";
-    lines.push(`  ${mid.get(e.from)} -->${lbl} ${mid.get(e.to)}`);
-  }
-  for (const n of d.nodes) {
-    lines.push(`  click ${mid.get(n.id)} call selectNodeByMid("${mid.get(n.id)}")`);
-  }
-  lines.push("  classDef s_hypo fill:#ddf4ff,stroke:#0969da,color:#1f2328;");
-  lines.push("  classDef s_invest fill:#fff8c5,stroke:#bf8700,color:#1f2328;");
-  lines.push("  classDef s_reject fill:#eaeef2,stroke:#afb8c1,color:#8c959f;");
-  lines.push("  classDef s_confirm fill:#ffebe9,stroke:#cf222e,color:#cf222e;");
-  for (const n of d.nodes) {
-    lines.push(`  class ${mid.get(n.id)} ${STATUS_CLASS[statusOf(n)]};`);
-  }
-  return lines.join("\n");
-}
-
-function selectNodeByMid(m) {
-  const id = midToId[m];
-  if (id != null) selectNode(id);
-}
 
 let renderSeq = 0;
-async function renderDiagram() {
-  const el = document.getElementById("diagram");
-  const def = nodesToMermaid(data);
+// 다이어그램 1개를 카드로 렌더. mermaid 코드는 스킬이 작성한 그대로 렌더하며,
+// 실패해도 이 카드에만 에러를 표시하고 다른 카드/페이지는 유지한다.
+async function renderDiagram(d) {
+  const card = document.createElement("section");
+  card.className = "card diagram-card";
+  const head = document.createElement("div");
+  head.className = "diagram-head";
+  const typeBadge = d.type ? `<span class="type">${escapeHtml(d.type)}</span>` : "";
+  head.innerHTML = `<h2>${escapeHtml(d.title || "다이어그램")}</h2>${typeBadge}`;
+  card.appendChild(head);
+
+  const holder = document.createElement("div");
+  holder.className = "diagram";
+  card.appendChild(holder);
+
+  if (d.note) {
+    const note = document.createElement("div");
+    note.className = "note";
+    note.innerHTML = marked.parse(d.note);
+    card.appendChild(note);
+  }
+  document.getElementById("diagrams").appendChild(card);
+
+  const code = String(d.mermaid || "").trim();
+  if (!code) {
+    holder.innerHTML = '<pre class="error">mermaid 코드가 비어 있습니다.</pre>';
+    return;
+  }
   try {
-    const { svg, bindFunctions } = await mermaid.render("dbgGraph_" + (++renderSeq), def);
-    el.innerHTML = svg;
-    if (bindFunctions) bindFunctions(el);
+    const { svg } = await mermaid.render("dbgGraph_" + (++renderSeq), code);
+    holder.innerHTML = svg;
   } catch (err) {
-    el.innerHTML = '<pre class="error">다이어그램 렌더 실패\n' + escapeHtml(err && err.message) + "</pre>";
+    holder.innerHTML =
+      '<pre class="error">다이어그램 렌더 실패\n' +
+      escapeHtml(err && err.message) +
+      "\n\n--- mermaid ---\n" +
+      escapeHtml(code) +
+      "</pre>";
   }
 }
 
-function renderNodeList() {
-  const ul = document.getElementById("node-list");
-  ul.innerHTML = "";
-  for (const n of data.nodes) {
-    const li = document.createElement("li");
-    li.className = "node-item" + (n.id === selectedId ? " selected" : "");
-    li.textContent = `[${statusOf(n)}] ${n.label || ""} (${n.id})`;
-    li.dataset.id = n.id;
-    li.onclick = () => selectNode(n.id);
-    ul.appendChild(li);
-  }
-}
-
-function selectNode(id) {
-  selectedId = id;
-  const n = data.nodes.find((x) => x.id === id);
-  const panel = document.getElementById("detail-panel");
-  panel.innerHTML = n
-    ? `<h3>${escapeHtml(n.label)} <span class="badge ${STATUS_CLASS[statusOf(n)]}">${escapeHtml(statusOf(n))}</span></h3>` + marked.parse(n.detail || "_증거 없음_")
-    : '<p class="muted">노드를 선택하세요.</p>';
-  renderNodeList();
-}
-
-function renderEditor() {
-  const c = document.getElementById("editor-controls");
-  c.innerHTML = "";
-  const nh = document.createElement("div");
-  nh.innerHTML = "<h3>원인 노드</h3>";
-  data.nodes.forEach((n, i) => {
-    const row = document.createElement("div");
-    row.className = "edit-row";
-    const opts = STATUSES.map((s) => `<option value="${s}"${statusOf(n) === s ? " selected" : ""}>${s}</option>`).join("");
-    row.innerHTML =
-      `<input data-k="id" value="${escapeAttr(n.id)}" placeholder="id" readonly title="id는 내부 식별자(편집 불가)">` +
-      `<input data-k="label" value="${escapeAttr(n.label)}" placeholder="원인/가설">` +
-      `<select data-k="status">${opts}</select>` +
-      `<textarea data-k="detail" placeholder="증거/판단(markdown)">${escapeHtml(n.detail || "")}</textarea>` +
-      `<button data-act="del">삭제</button>`;
-    row.querySelectorAll("input,textarea,select").forEach((inp) => {
-      inp.oninput = () => { n[inp.dataset.k] = inp.value; };
-      inp.onchange = () => { n[inp.dataset.k] = inp.value; renderDiagram(); renderNodeList(); };
-    });
-    row.querySelector('[data-act="del"]').onclick = () => { data.nodes.splice(i, 1); renderAll(); };
-    nh.appendChild(row);
-  });
-  const addN = document.createElement("button");
-  addN.textContent = "+ 노드";
-  addN.onclick = () => {
-    let k = data.nodes.length + 1;
-    while (data.nodes.some((x) => x.id === "c" + k)) k++;
-    data.nodes.push({ id: "c" + k, label: "새 가설", status: "가설", detail: "" });
-    renderAll();
-  };
-  nh.appendChild(addN);
-  c.appendChild(nh);
-
-  const eh = document.createElement("div");
-  eh.innerHTML = "<h3>연결</h3>";
-  data.edges.forEach((e, i) => {
-    const row = document.createElement("div");
-    row.className = "edit-row";
-    row.innerHTML =
-      `<input data-k="from" value="${escapeAttr(e.from)}" placeholder="from id">` +
-      `<input data-k="to" value="${escapeAttr(e.to)}" placeholder="to id">` +
-      `<input data-k="label" value="${escapeAttr(e.label || "")}" placeholder="왜?">` +
-      `<button data-act="del">삭제</button>`;
-    row.querySelectorAll("input").forEach((inp) => {
-      inp.oninput = () => { e[inp.dataset.k] = inp.value; };
-      inp.onchange = () => { renderDiagram(); };
-    });
-    row.querySelector('[data-act="del"]').onclick = () => { data.edges.splice(i, 1); renderAll(); };
-    eh.appendChild(row);
-  });
-  const addE = document.createElement("button");
-  addE.textContent = "+ 연결";
-  addE.onclick = () => { data.edges.push({ from: "", to: "", label: "왜?" }); renderAll(); };
-  eh.appendChild(addE);
-  c.appendChild(eh);
-}
-
-function renderAll() { renderDiagram(); renderNodeList(); renderEditor(); }
-
-function render() {
+async function render() {
   document.getElementById("doc-title").textContent = data.title || "debug-docs";
-  document.getElementById("overview").innerHTML = marked.parse(data.overview || "");
-  renderAll();
-}
-
-async function save() {
-  const status = document.getElementById("save-status");
-  status.textContent = "저장 중...";
-  try {
-    const payload = { ...data, edges: data.edges.filter((e) => e.from && e.to) };
-    const res = await fetch("/api/data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const j = await res.json().catch(() => ({}));
-    status.textContent = res.ok ? "저장됨" : "실패: " + (j.details ? j.details.join(", ") : j.error || res.status);
-  } catch (e) {
-    status.textContent = "실패: " + e.message;
+  const ov = document.getElementById("overview");
+  if (data.overview) {
+    ov.innerHTML = marked.parse(data.overview);
+  } else {
+    ov.style.display = "none";
+  }
+  const wrap = document.getElementById("diagrams");
+  wrap.innerHTML = "";
+  const diagrams = Array.isArray(data.diagrams) ? data.diagrams : [];
+  if (!diagrams.length) {
+    wrap.innerHTML = '<section class="card"><p class="muted">표시할 다이어그램이 없습니다.</p></section>';
+    return;
+  }
+  // 순서를 유지하기 위해 직렬 렌더(고유 id가 보장되고 카드 순서가 데이터 순서와 일치).
+  for (const d of diagrams) {
+    await renderDiagram(d);
   }
 }
 
@@ -179,8 +73,5 @@ async function load() {
   render();
 }
 
-window.selectNode = selectNode;
-window.selectNodeByMid = selectNodeByMid;
 mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
-document.getElementById("save-btn").onclick = save;
 load();

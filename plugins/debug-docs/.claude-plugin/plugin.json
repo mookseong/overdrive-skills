@@ -1,8 +1,8 @@
 {
   "name": "debug-docs",
   "version": "0.1.0",
-  "description": "디버그/문제 분석을 RCA 문서 + 상태색(가설/조사중/기각/확정) 원인-결과 트리로 만들어 로컬 서버로 띄운다. root cause analysis, RCA, 5 whys, fishbone, 디버깅, 원인 분석, 시각화.",
+  "description": "디버깅 상황을 상황에 맞는 다이어그램(시퀀스/클래스/상태/플로우차트/원인트리)으로 즉시 시각화해 로컬 서버로 띄운다. 코드/설명을 분석해 Mermaid 다이어그램을 그린다. debugging, sequence/class/state diagram, RCA, 코드 흐름 이해, 시각화.",
   "author": { "name": "limseongmuk", "email": "kmkook12312@gmail.com" },
   "license": "MIT",
-  "keywords": ["debug", "rca", "root-cause", "5-whys", "fishbone", "디버깅", "원인분석"]
+  "keywords": ["debug", "diagram", "sequence", "class-diagram", "mermaid", "rca", "디버깅", "시각화"]
 }
